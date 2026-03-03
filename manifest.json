@@ -1,0 +1,23 @@
+{
+    "manifest_version": 3,
+    "name": "Sheets Long Text Editor",
+    "version": "1.0",
+    "description": "スプレッドシートで長文を快適に入力するためのサイドパネルエディタ",
+    "permissions": [
+        "sidePanel",
+        "activeTab",
+        "scripting"
+    ],
+    "host_permissions": [
+        "https://docs.google.com/spreadsheets/*"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "action": {
+        "default_title": "エディタを開く"
+    },
+    "side_panel": {
+        "default_path": "sidepanel.html"
+    }
+}

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            box-sizing: border-box;
+            background-color: #f8f9fa;
+        }
+
+        h2 {
+            font-size: 16px;
+            margin-top: 0;
+            color: #202124;
+        }
+
+        textarea {
+            flex-grow: 1;
+            resize: none;
+            padding: 10px;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 12px;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #1a73e8;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            flex: 1;
+            padding: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        #loadBtn {
+            background: #e8eaed;
+            color: #3c4043;
+        }
+
+        #loadBtn:hover {
+            background: #dadce0;
+        }
+
+        #saveBtn {
+            background: #1a73e8;
+            color: white;
+        }
+
+        #saveBtn:hover {
+            background: #1557b0;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Sheets 長文エディタ</h2>
+    <textarea id="editor" placeholder="セルを選択して「読み込み」を押すか、ここにテキストを入力して「書き込み」を押してください。"></textarea>
+    <div class="button-group">
+        <button id="loadBtn">セルから読込</button>
+        <button id="saveBtn">セルへ書込</button>
+    </div>
+    <script src="sidepanel.js"></script>
+</body>
+
+</html>
