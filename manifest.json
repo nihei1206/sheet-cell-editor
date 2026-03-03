@@ -1,12 +1,12 @@
 {
     "manifest_version": 3,
-    "name": "Sheets Long Text Editor",
+    "name": "Sheet Cell Editor",
     "version": "1.0",
-    "description": "スプレッドシートで長文を快適に入力するためのサイドパネルエディタ",
+    "description": "A side panel editor for comfortably inputting long text in Google Sheets",
     "permissions": [
         "sidePanel",
         "activeTab",
-        "scripting"
+        "clipboardWrite"
     ],
     "host_permissions": [
         "https://docs.google.com/spreadsheets/*"
@@ -14,8 +14,18 @@
     "background": {
         "service_worker": "background.js"
     },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://docs.google.com/spreadsheets/*"
+            ],
+            "js": [
+                "content.js"
+            ]
+        }
+    ],
     "action": {
-        "default_title": "エディタを開く"
+        "default_title": "Open Editor"
     },
     "side_panel": {
         "default_path": "sidepanel.html"

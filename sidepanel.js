@@ -1,61 +1,61 @@
-// セルからテキストを読み込む
-document.getElementById('loadBtn').addEventListener('click', async () => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+// Flag to temporarily ignore updates from content.js during a save operation
+// This prevents the feedback loop where:
+// 1. Save writes text to formula bar
+// 2. content.js detects the change and sends it back
+// 3. Editor gets repopulated with the text we just saved
+let ignoreUpdatesUntil = 0;
 
-    if (!tab.url.includes("docs.google.com/spreadsheets")) {
-        alert("Googleスプレッドシートのタブを開いてください。");
-        return;
-    }
-
-    chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        function: readFromSheets
-    }, (results) => {
-        if (results && results[0] && results[0].result !== null) {
-            document.getElementById('editor').value = results[0].result;
-        }
-    });
-});
-
-// セルへテキストを書き込む
+// Write text to a cell
 document.getElementById('saveBtn').addEventListener('click', async () => {
     const text = document.getElementById('editor').value;
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    if (!tab.url.includes("docs.google.com/spreadsheets")) return;
+    // Ignore incoming updates for 1500ms to let the save + cell navigation complete
+    ignoreUpdatesUntil = Date.now() + 1500;
 
-    chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        function: writeToSheets,
-        args: [text]
+    // Write text to clipboard as a backup (user can Cmd+V if something goes wrong)
+    try {
+        await navigator.clipboard.writeText(text);
+    } catch (err) {
+        console.warn("[Sheet Cell Editor] Clipboard write failed:", err);
+    }
+
+    // Send save request to background.js, which will forward to content.js
+    chrome.runtime.sendMessage({ type: 'SAVE_TO_CELL', text: text }, (response) => {
+        if (chrome.runtime.lastError) {
+            console.warn("[Sheet Cell Editor] Save message failed:", chrome.runtime.lastError.message);
+            return;
+        }
+        console.log("[Sheet Cell Editor] Save message sent successfully");
     });
+
+    // Clear the editor immediately after saving
+    // content.js will repopulate it with the next cell's content after the ignore window
+    document.getElementById('editor').value = '';
 });
 
-// --- 以下はスプレッドシートの画面（Content Script環境）で実行される関数 ---
+// Receive messages from background.js and update the editor
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'UPDATE_SIDEPANEL') {
+        // Skip updates during the ignore window (right after saving)
+        if (Date.now() < ignoreUpdatesUntil) {
+            return;
+        }
 
-function readFromSheets() {
-    // スプレッドシートの数式バーの要素を取得
-    const formulaBar = document.getElementById('t-formula-bar-input');
-    return formulaBar ? formulaBar.innerText : "";
-}
-
-function writeToSheets(text) {
-    const formulaBar = document.getElementById('t-formula-bar-input');
-    if (formulaBar) {
-        // 数式バーにフォーカスを当てる
-        formulaBar.focus();
-
-        // テキストをセット（改行を保持するためにinnerTextを使用）
-        formulaBar.innerText = text;
-
-        // スプレッドシートのシステムに変更を認識させるためのイベント発火
-        formulaBar.dispatchEvent(new Event('input', { bubbles: true }));
-
-        // Enterキーを押して確定させる挙動をシミュレート
-        formulaBar.dispatchEvent(new KeyboardEvent('keydown', {
-            bubbles: true, cancelable: true, keyCode: 13, key: 'Enter'
-        }));
-    } else {
-        alert("数式バーが見つかりません。セルが選択されているか確認してください。");
+        const editor = document.getElementById('editor');
+        if (editor) {
+            if (editor.value !== message.text) {
+                editor.value = message.text;
+            }
+        }
     }
-}
+});
+
+// Get the latest text from the background when the side panel is opened
+chrome.runtime.sendMessage({ type: 'GET_CACHED_CELL' }, (response) => {
+    if (response && response.text !== undefined) {
+        const editor = document.getElementById('editor');
+        if (editor && editor.value !== response.text) {
+            editor.value = response.text;
+        }
+    }
+});
